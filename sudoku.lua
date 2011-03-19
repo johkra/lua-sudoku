@@ -10,6 +10,8 @@ local field = {
 	0, 0, 0, 0, 8, 0, 0, 7, 9
 }
 
+local queue = {}
+
 function print_field(field)
 	local length = (#field)^0.5
 	for i=0,length-1 do
@@ -47,13 +49,15 @@ function prepare_field(field)
 	for i=1,#field do
 		if field[i] == 0 then
 			field[i] = all_num
+		else
+			queue[#queue+1] = i
 		end
 	end
 end
 
 function remove_num(arr, num)
 	if type(arr) == "number" then
-		return arr
+		return arr, false
 	end
 
 	new_arr = {}
@@ -63,9 +67,9 @@ function remove_num(arr, num)
 		end
 	end
 	if #new_arr == 1 then
-		return new_arr[1]
+		return new_arr[1], true
 	end
-	return new_arr
+	return new_arr, false
 end
 
 function div(num, n)
@@ -83,21 +87,29 @@ end
 function compute_possibilities(field)
 	local length = (#field)^0.5
 	local sq_len = length^0.5
-	for i=1,#field do
+	while #queue > 0 do
+		i = queue[1]
 		local current_val = field[i]
-		if type(current_val) == "number" then
-			local row = div(i, length)
-			local col = mod_n(i, length)
-			local block_start = ((div(i, sq_len) % sq_len) * sq_len) + 
-				math.floor(div(i, length) / sq_len) * length * sq_len
-			for j=1,length do
-				local current_row = row*length + j
-				local current_col = (j-1)*length + col
-				local current_block = block_start + mod_n(j, sq_len) + (length * div(j, sq_len))
-				field[current_row] = remove_num(field[current_row], current_val)
-				field[current_col] = remove_num(field[current_col], current_val)
-				field[current_block] = remove_num(field[current_block], current_val)
+		local row = div(i, length)
+		local col = mod_n(i, length)
+		local block_start = ((div(i, sq_len) % sq_len) * sq_len) + 
+			math.floor(div(i, length) / sq_len) * length * sq_len
+		for j=1,length do
+			current_row = row*length + j
+			current_col = (j-1)*length + col
+			current_block = block_start + mod_n(j, sq_len) + (length * div(j, sq_len))
+			for _, l in ipairs({current_row, current_col, current_block}) do
+				field[l], add_to_queue = remove_num(field[l], current_val)
+				if add_to_queue then
+					queue[#queue+1] = l
+				end
 			end
+		end
+		-- TODO: Use more efficient way to implement queue.
+		local old_queue = queue
+		queue = {}
+		for i = 1,#old_queue-1 do
+			queue[i] = old_queue[i+1]
 		end
 	end
 	local missing = 0
