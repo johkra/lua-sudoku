@@ -159,16 +159,11 @@ function one_possibility_in_cell(field)
 			local found = {}
 			for i=1,length do
 				local current = calculate_current(length, n, i)
-				if type(field[current]) == "table" then
-					for _, num in pairs(field[current]) do
-						if found[num] then
-							found[num][#found[num]+1] = current
-						else
-							found[num] = {current}
-						end
-					end
-				else
-					local num = field[current]
+				local current_field = field[current]
+				if type(current_field) == "number" then
+					current_field = {current_field}
+				end
+				for _, num in pairs(current_field) do
 					if found[num] then
 						found[num][#found[num]+1] = current
 					else
