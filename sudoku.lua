@@ -25,10 +25,10 @@ function print_array(arr)
 		if type(arr[k]) == "number" then
 			io.write(string.format("%d", arr[k]))
 		else
-			print_arr(arr[k])
+			print_array(arr[k])
 		end
 		if k ~= #arr then
-			io.write(",")
+			io.write(", ")
 		end
 	end
 	io.write("]")
