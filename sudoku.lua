@@ -108,20 +108,33 @@ function calculate_missing(field)
 	return missing
 end
 
+calculate_row = function(length, row, pos)
+	return (row-1)*length + pos
+end
+
+calculate_col = function(length, col, pos)
+	return (pos-1)*length + col
+end
+
+calculate_block = function(length, block, pos)
+	local sq_len = length^0.5
+	local block_start = ((block-1)%sq_len) * sq_len +
+		div(block, sq_len) * length * sq_len
+	return block_start + mod_n(pos, sq_len) + (length * div(pos, sq_len))
+end
+
 function compute_possibilities(field)
 	local length = (#field)^0.5
 	local sq_len = length^0.5
 	while #queue > 0 do
 		i = queue[1]
 		local current_val = field[i]
-		local row = div(i, length)
-		local col = mod_n(i, length)
-		local block_start = ((div(i, sq_len) % sq_len) * sq_len) + 
-			math.floor(div(i, length) / sq_len) * length * sq_len
+		local block = 1 + (div(i, sq_len) % sq_len) + 
+			math.floor(div(i, length) / sq_len) * sq_len
 		for j=1,length do
-			current_row = row*length + j
-			current_col = (j-1)*length + col
-			current_block = block_start + mod_n(j, sq_len) + (length * div(j, sq_len))
+			current_row = calculate_row(length, div(i, length) + 1, j)
+			current_col = calculate_col(length, mod_n(i, length), j)
+			current_block = calculate_block(length, block , j)
 			for _, l in ipairs({current_row, current_col, current_block}) do
 				field[l], add_to_queue = remove_num(field[l], current_val)
 				if add_to_queue then
@@ -137,21 +150,6 @@ function compute_possibilities(field)
 		end
 	end
 	return calculate_missing(field)
-end
-
-calculate_row = function(length, row, pos)
-	return (row-1)*length + pos
-end
-
-calculate_col = function(length, col, pos)
-	return (pos-1)*length + col
-end
-
-calculate_block = function(length, block, pos)
-	local sq_len = length^0.5
-	local block_start = ((block-1)%sq_len) * sq_len +
-		div(block, sq_len) * length * sq_len
-	return block_start + mod_n(pos, sq_len) + (length * div(pos, sq_len))
 end
 
 function one_possibility_in_cell(field)
