@@ -1,13 +1,20 @@
 local field = {
-	5, 3, 0, 0, 7, 0, 0, 0, 0,
-	6, 0, 0, 1, 9, 5, 0, 0, 0,
-	0, 9, 8, 0, 0, 0, 0, 6, 0,
-	8, 0, 0, 0, 6, 0, 0, 0, 3,
-	4, 0, 0, 8, 0, 3, 0, 0, 1,
-	7, 0, 0, 0, 2, 0, 0, 0, 6,
-	0, 6, 0, 0, 0, 0, 2, 8, 0,
-	0, 0, 0, 4, 1, 9, 0, 0, 5,
-	0, 0, 0, 0, 8, 0, 0, 7, 9
+	 6,  0,  0,  0,  0,  0,  0, 13,  0,  0,  0, 16,  0, 12,  0,  3,
+	14,  0, 12,  0,  0,  0,  0,  6, 15,  0,  0,  0,  5,  0, 10,  0,
+	 3,  0,  0,  0,  0, 11, 12,  5, 14,  0,  7,  1,  0,  0,  0,  0,
+	10, 13,  7,  0,  0, 15,  0,  0,  0,  0,  4,  6, 14,  0,  0,  0,
+	 8,  0,  2, 16,  0,  0,  0,  0,  0,  0, 14,  0,  6,  1,  0,  9,
+	 0, 11,  0,  0,  0,  0,  0,  9,  0,  4,  0, 13,  8,  0,  0,  0,
+	 0,  0,  5,  0,  0,  0,  0, 15,  0, 11,  8, 10,  0, 14,  7,  4,
+	 1,  0, 10,  0,  0,  0,  8,  0,  0,  0,  0,  0, 15,  2, 11,  0,
+	 0,  5, 16,  7,  0,  0,  0,  0,  0,  6,  0,  0,  0,  4,  0,  8,
+	 4,  9,  8,  0,  3,  5, 16,  0, 11,  0,  0,  0,  0, 13,  0,  0,
+	 0,  0,  0,  1,  9,  0, 10,  0, 13,  0,  0,  0,  0,  0,  3,  0,
+	13,  0,  3, 10,  0, 12,  0,  0,  0,  0,  0,  0,  7, 15,  0,  1,
+	 0,  0,  0, 14, 15, 10,  0,  0,  0,  0,  1,  0,  0,  5, 12, 13,
+	 0,  0,  0,  0, 14, 16,  0,  1,  7,  8,  3,  0,  0,  0,  0,  6,
+	 0,  2,  0,  4,  0,  0,  0,  3,  6,  0,  0,  0,  0, 11,  0,  7,
+	 5,  0,  6,  0, 11,  0,  0,  0, 10,  0,  0,  0,  0,  0,  0, 15
 }
 
 local queue = {}
@@ -121,6 +128,57 @@ function compute_possibilities(field)
 	return missing
 end
 
+function one_possibility_in_cell(field)
+	local length = (#field)^0.5
+	for row=1,length do
+		local found = {}
+		for i=1,length do
+			local current = (row-1)*length + 1
+			if type(field[current]) == "table" then
+				for _, num in pairs(field[current]) do
+					if found[num] then
+						found[num][#found[num]] = current
+					else
+						found[num] = {current}
+					end
+				end
+			end
+		end
+		for num, where in pairs(found) do
+			if #where == 1 then
+				field[where[1]] = num
+			end
+		end
+	end
+	for col=1,length do
+		local found = {}
+		for i=1,length do
+			local current = (i-1)*length + col
+			if type(field[current]) == "table" then
+				for _, num in pairs(field[current]) do
+					if found[num] then
+						found[num][#found[num]] = current
+					else
+						found[num] = {current}
+					end
+				end
+			end
+		end
+		for num, where in pairs(found) do
+			if #where == 1 then
+				field[where[1]] = num
+			end
+		end
+	end
+	local missing = 0
+	for i=1,#field do
+		if type(field[i]) ~= "number" then
+			missing = missing + 1
+		end
+	end
+	return missing
+end
+
 prepare_field(field)
 
 local iterations = 0
@@ -128,6 +186,9 @@ repeat
 	local last_missing = missing
 	missing = compute_possibilities(field)
 	iterations = iterations + 1
+	if last_missing == missing then
+		missing = one_possibility_in_cell(field)
+	end
 until missing == 0 or last_missing == missing
 
 print_field(field)
