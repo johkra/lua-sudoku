@@ -91,6 +91,16 @@ function mod_n(num, n)
 	return mod
 end
 
+function calculate_missing(field)
+	local missing = 0
+	for i=1,#field do
+		if type(field[i]) ~= "number" then
+			missing = missing + 1
+		end
+	end
+	return missing
+end
+
 function compute_possibilities(field)
 	local length = (#field)^0.5
 	local sq_len = length^0.5
@@ -119,13 +129,7 @@ function compute_possibilities(field)
 			queue[i] = old_queue[i+1]
 		end
 	end
-	local missing = 0
-	for i=1,#field do
-		if type(field[i]) ~= "number" then
-			missing = missing + 1
-		end
-	end
-	return missing
+	return calculate_missing(field)
 end
 
 function calculate_single(field, calculate_current) 
@@ -177,13 +181,7 @@ function one_possibility_in_cell(field)
 	end
 	calculate_single(field, calculate_block)
 
-	local missing = 0
-	for i=1,#field do
-		if type(field[i]) ~= "number" then
-			missing = missing + 1
-		end
-	end
-	return missing
+	return calculate_missing(field)
 end
 
 prepare_field(field)
