@@ -174,28 +174,14 @@ function one_possibility_in_cell(field)
 			for num, where in pairs(found) do
 				if type(where) == "table" and #where == 1 then
 					field[where[1]] = num
-					if not verify_solution(field) then
-						print("Caused error!")
-						print_field(field)
-						os.exit()
-					end
 				end
 			end
 		end
 	end
 
 	calculate_single(field, calculate_row)
-	if not verify_solution(field) then
-		print("Error after row")
-	end
 	calculate_single(field, calculate_col)
-	if not verify_solution(field) then
-		print("Error after col")
-	end
 	calculate_single(field, calculate_block)
-	if not verify_solution(field) then
-		print("Error after block")
-	end
 
 	return calculate_missing(field)
 end
