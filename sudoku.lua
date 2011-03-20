@@ -128,48 +128,55 @@ function compute_possibilities(field)
 	return missing
 end
 
-function one_possibility_in_cell(field)
+function calculate_single(field, calculate_current) 
 	local length = (#field)^0.5
-	for row=1,length do
+	for n=1,length do
 		local found = {}
 		for i=1,length do
-			local current = (row-1)*length + 1
+			local current = calculate_current(length, n, i)
+			if current > 256 then
+				print(string.format("%d: %d, %d, %d", current, length, n, i))
+			end
 			if type(field[current]) == "table" then
 				for _, num in pairs(field[current]) do
+					if type(found[num]) == "number" then
+						break
+					end
 					if found[num] then
 						found[num][#found[num]] = current
 					else
 						found[num] = {current}
 					end
 				end
+			else
+				found[field[current]] = current
 			end
 		end
 		for num, where in pairs(found) do
-			if #where == 1 then
+			if type(where) == "table" and #where == 1 then
 				field[where[1]] = num
 			end
 		end
 	end
-	for col=1,length do
-		local found = {}
-		for i=1,length do
-			local current = (i-1)*length + col
-			if type(field[current]) == "table" then
-				for _, num in pairs(field[current]) do
-					if found[num] then
-						found[num][#found[num]] = current
-					else
-						found[num] = {current}
-					end
-				end
-			end
-		end
-		for num, where in pairs(found) do
-			if #where == 1 then
-				field[where[1]] = num
-			end
-		end
+end
+
+function one_possibility_in_cell(field)
+	calculate_row = function(length, row, pos)
+		return (row-1)*length + pos
 	end
+	calculate_single(field, calculate_row)
+	calculate_col = function(length, col, pos)
+		return (pos-1)*length + col
+	end
+	calculate_single(field, calculate_col)
+	calculate_block = function(length, block, pos)
+		local sq_len = length^0.5
+		local block_start = ((block-1)%sq_len) * sq_len +
+			div(block, sq_len) * length * sq_len
+		return block_start + mod_n(pos, sq_len) + (length * div(pos, sq_len))
+	end
+	calculate_single(field, calculate_block)
+
 	local missing = 0
 	for i=1,#field do
 		if type(field[i]) ~= "number" then
