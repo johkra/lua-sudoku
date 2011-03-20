@@ -19,6 +19,21 @@ local field = {
 
 local queue = {}
 
+function print_array(arr)
+	io.write("[")
+	for k=1,#arr do
+		if type(arr[k]) == "number" then
+			io.write(string.format("%d", arr[k]))
+		else
+			print_arr(arr[k])
+		end
+		if k ~= #arr then
+			io.write(",")
+		end
+	end
+	io.write("]")
+end
+
 function print_field(field)
 	local length = (#field)^0.5
 	for i=0,length-1 do
@@ -27,15 +42,7 @@ function print_field(field)
 			if type(field[current]) == "number" then
 				io.write(string.format("%d", field[current]))
 			else
-				local arr = field[current]
-				io.write("[")
-				for k=1,#arr do
-					io.write(string.format("%d", arr[k]))
-					if k ~= #arr then
-						io.write(",")
-					end
-				end
-				io.write("]")
+				print_array(field[current])
 			end
 			if (j ~= length) then
 				io.write("\t")
@@ -132,56 +139,94 @@ function compute_possibilities(field)
 	return calculate_missing(field)
 end
 
-function calculate_single(field, calculate_current) 
-	local length = (#field)^0.5
-	for n=1,length do
-		local found = {}
-		for i=1,length do
-			local current = calculate_current(length, n, i)
-			if current > 256 then
-				print(string.format("%d: %d, %d, %d", current, length, n, i))
-			end
-			if type(field[current]) == "table" then
-				for _, num in pairs(field[current]) do
-					if type(found[num]) == "number" then
-						break
+calculate_row = function(length, row, pos)
+	return (row-1)*length + pos
+end
+
+calculate_col = function(length, col, pos)
+	return (pos-1)*length + col
+end
+
+calculate_block = function(length, block, pos)
+	local sq_len = length^0.5
+	local block_start = ((block-1)%sq_len) * sq_len +
+		div(block, sq_len) * length * sq_len
+	return block_start + mod_n(pos, sq_len) + (length * div(pos, sq_len))
+end
+
+function one_possibility_in_cell(field)
+	function calculate_single(field, calculate_current) 
+		local length = (#field)^0.5
+		for n=1,length do
+			local found = {}
+			for i=1,length do
+				local current = calculate_current(length, n, i)
+				if type(field[current]) == "table" then
+					for _, num in pairs(field[current]) do
+						if found[num] then
+							found[num][#found[num]+1] = current
+						else
+							found[num] = {current}
+						end
 					end
+				else
+					local num = field[current]
 					if found[num] then
-						found[num][#found[num]] = current
+						found[num][#found[num]+1] = current
 					else
 						found[num] = {current}
 					end
 				end
-			else
-				found[field[current]] = current
 			end
-		end
-		for num, where in pairs(found) do
-			if type(where) == "table" and #where == 1 then
-				field[where[1]] = num
+			for num, where in pairs(found) do
+				if type(where) == "table" and #where == 1 then
+					field[where[1]] = num
+					if not verify_solution(field) then
+						print("Caused error!")
+						print_field(field)
+						os.exit()
+					end
+				end
 			end
 		end
 	end
-end
 
-function one_possibility_in_cell(field)
-	calculate_row = function(length, row, pos)
-		return (row-1)*length + pos
-	end
 	calculate_single(field, calculate_row)
-	calculate_col = function(length, col, pos)
-		return (pos-1)*length + col
+	if not verify_solution(field) then
+		print("Error after row")
 	end
 	calculate_single(field, calculate_col)
-	calculate_block = function(length, block, pos)
-		local sq_len = length^0.5
-		local block_start = ((block-1)%sq_len) * sq_len +
-			div(block, sq_len) * length * sq_len
-		return block_start + mod_n(pos, sq_len) + (length * div(pos, sq_len))
+	if not verify_solution(field) then
+		print("Error after col")
 	end
 	calculate_single(field, calculate_block)
+	if not verify_solution(field) then
+		print("Error after block")
+	end
 
 	return calculate_missing(field)
+end
+
+function verify_solution(field)
+	function verify_cell(field, calculate_current)
+		local length = (#field)^0.5
+		for n=1,length do
+			local found = {}
+			for i=1,length do
+				local current = calculate_current(length, n, i)
+				if type(field[current]) == "table" then
+					break
+				end
+				if found[field[current]] then
+					print(string.format("Position %d: duplicate value %d in cell", current, field[current]))
+					return false
+				end
+				found[field[current]] = true
+			end
+		end
+		return true
+	end
+	return verify_cell(field, calculate_row) and verify_cell(field, calculate_col) and verify_cell(field, calculate_block)
 end
 
 prepare_field(field)
@@ -190,12 +235,24 @@ local iterations = 0
 repeat
 	local last_missing = missing
 	missing = compute_possibilities(field)
+	if not verify_solution(field) then
+		print("Error after compute_possiblities")
+		break
+	end
 	iterations = iterations + 1
 	if last_missing == missing then
 		missing = one_possibility_in_cell(field)
+		if not verify_solution(field) then
+			print("Error after one_possibility_in_cell")
+			break
+		end
 	end
 until missing == 0 or last_missing == missing
 
 print_field(field)
 
-print(string.format("Solved in %d iterations", iterations))
+if not verify_solution(field) then
+	print("Error in solution")
+else
+	print(string.format("Solved in %d iterations", iterations))
+end
